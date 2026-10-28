@@ -145,3 +145,40 @@ LEFT JOIN raw.product_category_translation t
     ON p.product_category_name = t.product_category_name
 WHERE NULLIF(TRIM(p.product_category_name), '') IS NOT NULL
   AND t.product_category_name IS NULL;
+  -- 11. Нарушения связей между таблицами
+SELECT
+    'items_without_order' AS problem,
+    COUNT(*) AS affected_rows
+FROM raw.order_items i
+LEFT JOIN raw.orders o ON i.order_id = o.order_id
+WHERE o.order_id IS NULL
+
+UNION ALL
+
+SELECT 'items_without_product', COUNT(*)
+FROM raw.order_items i
+LEFT JOIN raw.products p ON i.product_id = p.product_id
+WHERE p.product_id IS NULL
+
+UNION ALL
+
+SELECT 'items_without_seller', COUNT(*)
+FROM raw.order_items i
+LEFT JOIN raw.sellers s ON i.seller_id = s.seller_id
+WHERE s.seller_id IS NULL
+
+UNION ALL
+
+SELECT 'payments_without_order', COUNT(*)
+FROM raw.order_payments p
+LEFT JOIN raw.orders o ON p.order_id = o.order_id
+WHERE o.order_id IS NULL
+
+UNION ALL
+
+SELECT 'orders_without_items', COUNT(*)
+FROM raw.orders o
+WHERE NOT EXISTS (
+    SELECT 1 FROM raw.order_items i
+    WHERE i.order_id = o.order_id
+);
